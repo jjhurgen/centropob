@@ -1,0 +1,651 @@
+/*FUNCIONES */
+DELIMITER //
+CREATE FUNCTION f_altitud(dato INT)
+RETURNS VARCHAR(25)
+DETERMINISTIC
+BEGIN
+    DECLARE mensaje VARCHAR(25);
+    SET mensaje := 'm.s.n.m';
+    RETURN CONCAT(dato, ' ', mensaje);
+END //
+DELIMITER ;
+
+/*Procedimientos para usuarios*/
+
+-- INSERT
+DELIMITER //
+CREATE PROCEDURE p_inseusu(
+    IN dn VARCHAR(8),
+    IN nom VARCHAR(50),
+    IN ape VARCHAR(50),
+    IN cel VARCHAR(15),
+    IN dir VARCHAR(100),
+    IN usu VARCHAR(45),
+    IN pss VARCHAR(45),
+    IN es INT,
+    IN tip INT
+)
+BEGIN
+    DECLARE existe_usuario INT;
+    DECLARE existe_dni INT;
+    DECLARE existe_celular INT;
+    DECLARE clave_dni VARCHAR(8);  -- Variable para almacenar la clave del DNI
+    -- Verificar si el usuario, el DNI o el celular ya existen
+    SELECT COUNT(*) INTO existe_usuario
+    FROM usuario
+    WHERE dni = dn OR nomusu = usu OR celular = cel;
+    IF existe_usuario > 0 THEN
+        -- Si el usuario ya existe
+        IF EXISTS(SELECT 1 FROM usuario WHERE nomusu = usu) THEN
+            SELECT CONCAT('Este usuario: ', usu, ' ya existe.') AS mensaje;
+        -- Si el DNI ya está asociado a otro usuario
+        ELSEIF EXISTS(SELECT 1 FROM usuario WHERE dni = dn) THEN
+            SELECT CONCAT('El DNI ', dn, ' ya está asociado a otro usuario.') AS mensaje;
+        -- Si el número de celular ya está asociado a otro usuario
+        ELSEIF EXISTS(SELECT 1 FROM usuario WHERE celular = cel) THEN
+            SELECT CONCAT('El número de celular ', cel, ' ya está asociado a otro usuario.') AS mensaje;
+        END IF;
+    ELSE
+        -- Generar la clave para encriptar la contraseña (clave = DNI)
+        SET clave_dni = SUBSTRING(dn, 1, 8);  -- Asegurar que la clave sea de 8 caracteres
+        -- Insertar el nuevo usuario con la contraseña encriptada
+        INSERT INTO usuario(nomusu, psw, dni, nombres, apellidos, celular, direccion, fk_eess, fk_tipousuario)
+        VALUES (usu, HEX(AES_ENCRYPT(pss, clave_dni)), dn, nom, ape, cel, dir, es, tip);        
+        -- Insertado correctamente
+        SELECT 'El usuario ha sido ingresado correctamente.' AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+-- UPDATE
+DELIMITER //
+
+CREATE PROCEDURE p_updateusu(
+    IN uid INT,
+    IN dn VARCHAR(8),
+    IN nom VARCHAR(50),
+    IN ape VARCHAR(50),
+    IN cel VARCHAR(15),
+    IN dir VARCHAR(100),
+    IN usu VARCHAR(45),
+    IN pss VARCHAR(45),
+    IN es INT,
+    IN tip INT,
+    IN iduser INT,
+    IN per VARCHAR(70)
+)
+BEGIN
+    DECLARE existe_usuario INT;
+    DECLARE existe_dni INT;
+    DECLARE existe_celular INT;
+    DECLARE old_nomusu VARCHAR(45);
+    DECLARE old_psw BLOB;
+    DECLARE old_dni VARCHAR(8);
+    DECLARE old_nombres VARCHAR(50);
+    DECLARE old_apellidos VARCHAR(50);
+    DECLARE old_celular VARCHAR(15);
+    DECLARE old_direccion VARCHAR(100);
+    DECLARE old_fk_eess INT;
+    DECLARE old_fk_tipousuario INT;
+    DECLARE cambios TEXT;
+    DECLARE hay_cambios BOOLEAN DEFAULT FALSE;
+    
+    SET cambios = CONCAT('Cambios en el usuario con DNI: ', dn, '. ');
+
+    -- Obtener valores antiguos
+    SELECT nomusu, psw, dni, nombres, apellidos, celular, direccion, fk_eess, fk_tipousuario
+    INTO old_nomusu, old_psw, old_dni, old_nombres, old_apellidos, old_celular, old_direccion, old_fk_eess, old_fk_tipousuario
+    FROM usuario
+    WHERE idusuario = uid;
+
+    -- Conteo de usuarios con el mismo nombre de usuario
+    SELECT COUNT(*)
+    INTO existe_usuario
+    FROM usuario
+    WHERE nomusu = usu AND idusuario != uid;
+
+    -- Conteo de usuarios con el mismo DNI
+    SELECT COUNT(*)
+    INTO existe_dni
+    FROM usuario
+    WHERE dni = dn AND idusuario != uid;
+
+    -- Conteo de usuarios con el mismo número de celular
+    SELECT COUNT(*)
+    INTO existe_celular
+    FROM usuario
+    WHERE celular = cel AND idusuario != uid;
+
+    -- Verificar si se pueden actualizar los datos
+    IF existe_usuario > 0 THEN
+        -- No se puede actualizar el nombre de usuario
+        SELECT 'Error al actualizar. El nombre de usuario ya existe.' AS mensaje;
+    ELSEIF existe_dni > 0 THEN
+        -- No se puede actualizar el DNI
+        SELECT 'Error al actualizar. Otro usuario tiene mismo DNI' AS mensaje;
+    ELSEIF existe_celular > 0 THEN
+        -- No se puede actualizar el número de celular
+        SELECT 'Error al actualizar. Otro usuario tiene mismo número de celular' AS mensaje;
+    ELSE
+        -- Comprobar y registrar los cambios
+        IF old_nomusu != usu THEN
+            SET cambios = CONCAT(cambios, 'Se cambió cuenta: ', old_nomusu, ' -> ', usu, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        -- Desencriptar la contraseña antigua para la comparación
+        IF old_psw != HEX(AES_ENCRYPT(pss, SUBSTRING(dn, 1, 8))) THEN
+            SET cambios = CONCAT(cambios, 'Contraseña actualizada; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_dni != dn THEN
+            SET cambios = CONCAT(cambios, 'Se cambió DNI: ', old_dni, ' -> ', dn, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_nombres != nom THEN
+            SET cambios = CONCAT(cambios, 'Se cambió nombre: ', old_nombres, ' -> ', nom, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_apellidos != ape THEN
+            SET cambios = CONCAT(cambios, 'Se cambió apellido: ', old_apellidos, ' -> ', ape, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_celular != cel THEN
+            SET cambios = CONCAT(cambios, 'Se cambió celular: ', old_celular, ' -> ', cel, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_direccion != dir THEN
+            SET cambios = CONCAT(cambios, 'Se cambió dirección: ', old_direccion, ' -> ', dir, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_fk_eess != es THEN
+            SET cambios = CONCAT(cambios, 'Se cambió establecimiento: ', old_fk_eess, ' -> ', es, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        IF old_fk_tipousuario != tip THEN
+            SET cambios = CONCAT(cambios, 'Se cambió cargo: ', old_fk_tipousuario, ' -> ', tip, '; ');
+            SET hay_cambios = TRUE;
+        END IF;
+
+        -- Actualizar el registro del usuario sólo si hay cambios
+        IF hay_cambios THEN
+            START TRANSACTION;
+
+            UPDATE usuario
+            SET nomusu = usu,
+                psw = HEX(AES_ENCRYPT(pss, SUBSTRING(dn, 1, 8))), -- Encriptar la contraseña con AES
+                dni = dn,
+                nombres = nom,
+                apellidos = ape,
+                celular = cel,
+                direccion = dir,
+                fk_eess = es,
+                fk_tipousuario = tip
+            WHERE idusuario = uid;
+
+            -- Insertar en la tabla de acciones
+            INSERT INTO r_accionesusu (id_usuario, persona, accion, fecha)
+            VALUES (iduser, per, cambios, NOW());
+
+            COMMIT;
+
+            SELECT 'Datos del usuario actualizados correctamente.' AS mensaje;
+        ELSE
+            SELECT 'No hay cambios para actualizar.' AS mensaje;
+        END IF;
+    END IF;
+END //
+DELIMITER ;
+
+-- DELETE
+// DELIMITER
+CREATE PROCEDURE p_deleteusu(
+    IN uid INT
+)
+BEGIN
+    -- Eliminar el usuario
+    DELETE FROM usuario
+    WHERE idusuario = uid;
+    -- Mensaje de éxito
+    SELECT 'Usuario eliminado correctamente.' AS mensaje;
+END //
+DELIMITER ;
+
+/*PROCEDIMIENTOS PARA ESTABLECIMIENTOS*/
+-- INSERT
+// DELIMITER
+CREATE PROCEDURE P_inserestable(
+    IN cod VARCHAR(45),
+    IN condi VARCHAR(1),
+    IN nom VARCHAR(120),
+    IN fkred INT,
+    IN fkdis int
+)
+BEGIN
+    DECLARE cod_exis INT;
+    -- Verifica si el código del establecimiento ya existe
+    SELECT COUNT(*) INTO cod_exis
+    FROM eess
+    WHERE codipress = cod;
+    -- Si no existe, inserta el nuevo establecimiento
+    IF cod_exis = 0 THEN
+        INSERT INTO eess(codipress, condicion, nom_eess, fk_idmicrored,fk_iddistrito)
+        VALUES (cod, condi, nom, fkred, fkdis);
+        SELECT 'Establecimiento ingresado correctamente' AS mensaje;
+    ELSE
+        SELECT concat('Error al registrar establecimiento, el código: ',cod,' ya existe') AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+
+-- UPDATE
+DELIMITER //
+CREATE PROCEDURE P_actualizaestable(
+    IN id INT,
+    IN new_cod VARCHAR(45),
+    IN new_condi VARCHAR(1),
+    IN new_nom VARCHAR(120),
+    IN new_fkred INT,
+    IN new_fkdis INT
+)
+BEGIN
+    DECLARE cod_exis INT;
+    DECLARE codipress_exis INT;    
+    -- Verifica si el establecimiento con el ID proporcionado existe
+    SELECT COUNT(*) INTO cod_exis
+    FROM eess
+    WHERE ideess = id;
+    -- Verifica si el código de establecimiento ya existe en otro registro
+    SELECT COUNT(*) INTO codipress_exis
+    FROM eess
+    WHERE codipress = new_cod AND ideess != id;
+    -- Si existe, actualiza el establecimiento
+    IF cod_exis > 0 THEN
+        IF codipress_exis = 0 THEN
+            UPDATE eess
+            SET codipress = new_cod, condicion = new_condi, nom_eess = new_nom, fk_idmicrored = new_fkred, fk_iddistrito = new_fkdis
+            WHERE ideess = id;
+            SELECT 'Establecimiento actualizado correctamente' AS mensaje;
+        ELSE
+            SELECT concat('No se puede actualizar el establecimiento, el código: ',new_cod,' del establecimiento ya existe') AS mensaje;
+        END IF;
+    ELSE
+        SELECT 'No se puede actualizar establecimiento, el ID no existe' AS mensaje;
+    END IF;
+END//
+DELIMITER ;
+-- DELETE
+
+DELIMITER //
+CREATE PROCEDURE P_eliminaestable(
+    IN id INT
+)
+BEGIN
+    DECLARE exis INT;
+    -- Verifica si el establecimiento con el ID proporcionado existe
+    SELECT COUNT(*) INTO exis
+    FROM eess
+    WHERE ideess = id;
+    -- Si existe, elimina el establecimiento
+    IF exis > 0 THEN
+        DELETE FROM eess
+        WHERE ideess = id;
+        SELECT 'Establecimiento eliminado correctamente' AS mensaje;
+    ELSE
+        SELECT 'No se puede eliminar establecimiento, el ID no existe' AS mensaje;
+    END IF;
+END//
+DELIMITER ;
+
+/*PROCEDIMIENTOS DE CENTRO POBLADO*/
+-- INSERT
+DELIMITER //
+CREATE PROCEDURE Insertcp(
+    IN cod VARCHAR(15),
+    IN nom VARCHAR(45),
+    IN lon VARCHAR(45),
+    IN lat VARCHAR(45),
+    IN alt VARCHAR(45),
+    IN fk_iddis INT
+)
+BEGIN
+    DECLARE existe_codigo INT;
+    -- Verificar si el código del centro poblado ya existe o si la longitud y latitud ya existen
+    SELECT COUNT(*)
+    INTO existe_codigo
+    FROM centro_poblado
+    WHERE codcp = cod OR (longitud = lon AND latitud = lat);
+    IF existe_codigo > 0 THEN
+        -- si el código existe
+        IF EXISTS (SELECT 1 FROM centro_poblado WHERE codcp = cod) THEN
+            SELECT CONCAT('Este código: ', cod, ' ya existe') AS mensaje;
+        -- si la longitud y latitud ya están en otro cp
+        ELSEIF EXISTS (SELECT 1 FROM centro_poblado WHERE longitud = lon AND latitud = lat) THEN
+            SELECT CONCAT('Ya existe un Centro Poblado con la misma longitud y latitud') AS mensaje;
+        END IF;
+    ELSE
+        -- Insertar datos en centro_poblado
+        INSERT INTO centro_poblado (codcp, nom_cp, longitud, latitud, Altitud, fk_iddistrito)
+        VALUES (cod, nom, lon, lat, f_altitud(alt), fk_iddis);
+        -- insertado correctamente
+        SELECT 'El centro poblado se ingresó correctamente' AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+
+-- UPDATE
+DELIMITER //
+CREATE PROCEDURE p_updatecp(
+    IN p_idcentro_poblado INT,
+    IN p_codcp VARCHAR(15),
+    IN p_nom_cp VARCHAR(45),
+    IN p_longitud VARCHAR(45),
+    IN p_latitud VARCHAR(45),
+    IN p_Altitud VARCHAR(45),
+    IN p_fk_iddistrito INT
+)
+BEGIN
+    DECLARE existe_codigo INT;
+    DECLARE existe_lat_long INT;
+    -- Verificar si ya existe un registro con el mismo código
+    SELECT COUNT(*)
+    INTO existe_codigo
+    FROM centro_poblado
+    WHERE codcp = p_codcp AND idcentro_poblado != p_idcentro_poblado;
+    -- Verificar si ya existe un registro con la misma latitud y longitud
+    SELECT COUNT(*)
+    INTO existe_lat_long
+    FROM centro_poblado
+    WHERE (latitud = p_latitud AND longitud = p_longitud) AND idcentro_poblado != p_idcentro_poblado;
+    -- Si ya existe un registro con el mismo código, mostrar mensaje de error
+    IF existe_codigo > 0 THEN
+        SELECT concat('Error, este codigo: ',p_codcp, ' ya existe ') AS mensaje;
+    -- Si ya existe un registro con la misma latitud y longitud, mostrar mensaje de error
+    ELSEIF existe_lat_long > 0 THEN
+        SELECT 'Error. Ya existe un registro con la misma latitud y longitud.' AS mensaje;
+    ELSE
+        -- Actualizar el registro
+        UPDATE centro_poblado
+        SET codcp = p_codcp,
+            nom_cp = p_nom_cp,
+            longitud = p_longitud,
+            latitud = p_latitud,
+            Altitud = f_altitud(p_Altitud),
+            fk_iddistrito = p_fk_iddistrito
+        WHERE idcentro_poblado = p_idcentro_poblado;
+        -- Mensaje de éxito
+        SELECT 'El centro poblado ha sido actualizado correctamente.' AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+
+-- DELETE
+DELIMITER //
+CREATE PROCEDURE p_deletecp(
+    IN p_idcentro_poblado INT
+)
+BEGIN
+    -- Eliminar el registro del centro poblado
+    DELETE FROM centro_poblado
+    WHERE idcentro_poblado = p_idcentro_poblado;
+    -- Mensaje de éxito
+    SELECT 'El centro poblado ha sido eliminado correctamente.' AS mensaje;
+END //
+DELIMITER ;
+
+/*PROCEDIMIENTO DE SECTORES*/
+-- INSERT
+FALTA
+
+-- UPDATE
+
+DELIMITER //
+CREATE PROCEDURE actualizar_sector(
+    IN p_idsector INT,
+    IN p_codsec VARCHAR(20),
+    IN p_nom_sector VARCHAR(45),
+    IN p_longisec VARCHAR(50),
+    IN p_latisec VARCHAR(50)
+)
+BEGIN
+    DECLARE codigo_existente INT;
+    DECLARE coordenadas_existente INT;
+    -- Verificar si el nuevo código ya existe en otro registro
+    SELECT COUNT(*) INTO codigo_existente
+    FROM sector
+    WHERE codsec = p_codsec AND idsector != p_idsector;
+    IF codigo_existente > 0 THEN
+        SELECT 'Este código ya existe en otro sector.' AS mensaje;
+    ELSE
+        -- Verificar si las coordenadas ya existen en otro registro
+        SELECT COUNT(*) INTO coordenadas_existente
+        FROM sector
+        WHERE longisec = p_longisec AND latisec = p_latisec AND idsector != p_idsector;
+        IF coordenadas_existente > 0 THEN
+            SELECT 'Las coordenadas ya están en otro sector.' AS mensaje;
+        ELSE
+            -- Actualizar el registro si las condiciones se cumplen
+            UPDATE sector
+            SET codsec = p_codsec,
+                nom_sector = p_nom_sector,
+                longisec = p_longisec,
+                latisec = p_latisec
+            WHERE idsector = p_idsector;
+            SELECT 'Sector actualizado correctamente.' AS mensaje;
+        END IF;
+    END IF;
+END//
+DELIMITER ;
+-- DELETE
+SIMPLE CONSULTA
+
+/*PROCEDIMIENTOS ASIGNA CP*/
+-- ASIGNAR
+DELIMITER //
+CREATE PROCEDURE Asignaeess(
+    IN p_idcentro_poblado INT,
+    IN p_fk_ideess INT
+)
+BEGIN
+    DECLARE v_count INT;
+    -- Contar cuántos eess están asociados con el centro_poblado
+    SELECT COUNT(*)
+    INTO v_count
+    FROM eessxcp
+    WHERE fk_idcentro_poblado = p_idcentro_poblado;
+    -- Verificar si ya tiene 2 asociaciones
+    IF v_count >= 2 THEN
+        SELECT 'Un centro poblado no puede estar asociado a más de 2 establecimientos de salud' AS mensaje;
+    ELSE
+        -- Insertar la asociación si tiene menos de 2
+        INSERT INTO eessxcp (fk_ideess, fk_idcentro_poblado)
+        VALUES (p_fk_ideess, p_idcentro_poblado);
+        -- Si ya tiene 1 asociación, mostrar un mensaje
+        IF v_count = 1 THEN
+            SELECT 'Este centro poblado ya tiene un establecimiento de salud asignado' AS mensaje;
+        ELSE
+            -- Mensaje de éxito al insertar la primera asociación
+            SELECT 'Establecimiento de salud asignado correctamente al centro poblado' AS mensaje;
+        END IF;
+    END IF;
+END//
+DELIMITER ;
+
+-- QUITAR ASIGNACION
+DELIMITER //
+CREATE PROCEDURE p_quitarasigna(
+    IN p_id INT
+)
+BEGIN
+    -- Eliminar la asignación del establecimiento de salud al centro poblado utilizando el ID de la tabla eessxcp
+    DELETE FROM eessxcp
+    WHERE idasigna = p_id;
+    -- Mensaje de éxito
+    SELECT 'Asignación del establecimiento quitada correctamente.' AS mensaje;
+END //
+DELIMITER ;
+
+/*PROCEDIMIENTOS DE ASIGNA SECTOR*/
+-- ASIGNAR
+DELIMITER //
+CREATE PROCEDURE p_asignasector(
+    IN Iidsec INT,
+    IN fkcp INT
+)
+BEGIN
+    DECLARE exist_sector INT;
+    -- Verificar si el sector existe y su fk_cp es NULL
+    SELECT COUNT(*) INTO exist_sector
+    FROM sector
+    WHERE idsector = Iidsec AND fk_cp IS NULL;
+    IF exist_sector = 0 THEN
+        SELECT 'Este sector ya está asignado a un centro poblado' AS mensaje;
+    ELSE
+        -- Actualizar el sector para asignarlo al centro poblado
+        UPDATE sector 
+        SET fk_cp = fkcp 
+        WHERE idsector = Iidsec;
+        SELECT 'El sector se asignó correctamente' AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+
+-- QUITAR ASIGNACIÓN
+DELIMITER //
+CREATE PROCEDURE p_desasignasector(
+    IN Iidsec INT
+)
+BEGIN
+    DECLARE exist_sector INT;
+    -- Verificar si el sector existe y tiene asignado un centro poblado
+    SELECT COUNT(*) INTO exist_sector
+    FROM sector
+    WHERE idsector = Iidsec AND fk_cp IS NOT NULL;
+    IF exist_sector = 0 THEN
+        SELECT 'Este sector no tiene un centro poblado asignado' AS mensaje;
+    ELSE
+        -- Actualizar el sector para quitar la asignación del centro poblado
+        UPDATE sector 
+        SET fk_cp = NULL 
+        WHERE idsector = Iidsec;
+        SELECT 'La asignación del sector se quitó correctamente' AS mensaje;
+    END IF;
+END //
+DELIMITER ;
+
+/*PROCEDIMIENTOS PARA EL LOGEO*/
+
+-- MOSTRAR CONTRASEÑA
+DELIMITER //
+CREATE PROCEDURE `p_mostrarcontra`(
+    IN id_usuario INT,
+    IN clave VARCHAR(8),
+    IN contraseña_encriptada VARCHAR(100)
+)
+BEGIN
+    DECLARE contraseña_desencriptada VARCHAR(100);    
+    -- Realizar desencriptación utilizando AES con clave proporcionada
+    SET contraseña_desencriptada = AES_DECRYPT(UNHEX(contraseña_encriptada), clave);    
+    -- Devolver la contraseña desencriptada
+    SELECT contraseña_desencriptada AS contraseña_desencriptada;
+END //
+DELIMITER ;
+
+/*VISTAS PARA LAS TABLAS*/
+-- VISTA DE USUARIO
+CREATE VIEW vi_usu 
+AS
+SELECT u.idusuario AS ID,u.dni AS DNI,CONCAT_WS(' ', u.nombres, u.apellidos) AS PERSONA,
+        u.celular AS celular,u.direccion AS direccion,t.nomtipousuario AS CARGO,
+        u.nomusu AS Usuario,e.nom_eess AS Establecimiento
+FROM usuario u
+JOIN eess e ON e.ideess = u.fk_eess
+JOIN tipousuario t ON t.idtipousuario = u.fk_tipousuario
+ORDER BY u.idusuario;
+
+-- VISTA DE ESTABLECIMIENTO
+CREATE VIEW vi_establece AS
+    SELECT 
+        e.ideess AS ideess,
+        e.codipress AS codipress,
+        e.condicion AS condicion,
+        e.nom_eess AS nom_eess,
+        m.nom_micro AS nom_micro,
+        r.nom_red AS nom_red,
+        d.nom_dist AS nom_dist
+    FROM
+        eess e
+        JOIN microred m ON m.idmicrored = e.fk_idmicrored
+        JOIN red_salud r ON r.idred_salud = m.fk_red
+        JOIN distrito d ON d.iddistrito = e.fk_iddistrito
+    ORDER BY e.ideess;
+
+-- VISTA DE CENTRO POBLADO
+CREATE VIEW v_centrop AS
+    SELECT 
+        c.idcentro_poblado AS ID,
+        c.codcp AS Codigo_CP,
+        c.nom_cp AS Centro_Poblado,
+        c.longitud AS longitud,
+        c.latitud AS latitud,
+        c.Altitud AS Altitud,
+        d.nom_dist AS Distrito,
+        p.nom_provi AS Provincia
+    FROM
+        centro_poblado c
+        JOIN distrito d ON d.iddistrito = c.fk_iddistrito
+        JOIN provincia p ON p.idprovincia = d.fk_provincia
+    ORDER BY c.idcentro_poblado;
+
+/*-TABLAS PARA LOS REPORTES DE AUDITORIA-*/
+CREATE TABLE r_accionesEESS (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT,
+    persona varchar(70),
+    accion VARCHAR(255),
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE r_accionesCP (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT not null,
+    persona varchar(70) not null,
+    accion VARCHAR(255) not null,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE r_accionesUsu (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT not null,
+    persona varchar(70) not null,
+    accion VARCHAR(255) not null,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE r_accionesSector (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+   id_usuario INT not null,
+    persona varchar(70) not null,
+    accion VARCHAR(255) not null,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE r_accionesAsigna (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT not null,
+    persona varchar(70) not null,
+    accion VARCHAR(255) not null,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE r_accionesAsignasector (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT not null,
+    persona varchar(70) not null,
+    accion VARCHAR(255) not null,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

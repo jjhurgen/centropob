@@ -1,0 +1,249 @@
+body,
+html {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-container {
+  background: #2ca7bacb;
+  font-family: "Roboto", sans-serif;
+  padding: 60px;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 700px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column; /* Cambiado para la disposición en columna */
+  justify-content: center;
+  align-items: center;
+  border: 5px solid #5ca6b1;
+  -webkit-box-shadow: 7px 10px 21px 11px rgba(204, 204, 204, 1);
+  -moz-box-shadow: 7px 10px 21px 11px rgba(204, 204, 204, 1);
+  box-shadow: 7px 10px 21px 11px rgba(204, 204, 204, 1);
+}
+.container h4 {
+  color: #ffffff;
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  text-transform: uppercase;
+  font-weight: bold; /* Añadido para poner las letras en negrita */
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 30px 0;
+}
+
+.custom-img {
+  width: 250px; /* Ajusta este valor al tamaño deseado */
+  height: 250px; /* Ajusta este valor al tamaño deseado */
+  object-fit: contain; /* Mantiene la proporción dentro del contenedor */
+}
+
+.form-icon {
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  padding: 20px 0; /* Ajustado el padding */
+}
+
+.form-icon i {
+  font-size: 124px;
+  margin: 0 0 15px;
+  display: block;
+}
+
+.signup a {
+  color: #fff;
+  text-transform: capitalize;
+  transition: all 0.3s ease;
+}
+
+.signup a:hover {
+  text-decoration: underline;
+}
+
+.form-horizontal {
+  background: rgba(255, 255, 255, 0.99);
+  max-width: 350px;
+  padding: 40px 20px; /* Ajustado el padding */
+  margin: 20px 0; /* Ajustado el margin */
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  color: #9b9797;
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 30px 0;
+}
+
+.form-group {
+  margin: 0 0 15px;
+  width: 100%;
+}
+
+.input-group {
+  display: flex;
+  align-items: center; /* Alinea los elementos al centro */
+  border: 1px solid #b5b5b5;
+  border-radius: 20px;
+  padding: 5px 15px; /* Añadido padding */
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.input-icon {
+  color: #b5b5b5;
+  font-size: 15px;
+  text-align: center;
+  line-height: 38px;
+  height: 35px;
+  width: 40px;
+}
+
+.form-control {
+  color: #b5b5b5;
+  background-color: transparent;
+  font-size: 14px;
+  letter-spacing: 1px;
+  width: 100%; /* Cambiado para ocupar todo el espacio */
+  padding: 2px 10px;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+}
+
+.form-control:focus {
+  box-shadow: none;
+  border: none;
+}
+
+.form-control::placeholder {
+  color: #b5b5b5;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.password-group {
+  display: flex;
+  align-items: center; /* Alinea los elementos al centro */
+}
+
+.password-group input[type="checkbox"] {
+  margin-left: 10px; /* Añade un margen a la izquierda del checkbox */
+}
+
+.password-group label {
+  color: #b5b5b5;
+  margin-left: 5px; /* Añade un margen a la izquierda de la etiqueta */
+  font-size: 13px;
+}
+
+.btn {
+  color: #ffffff;
+  background: #2ca7bacb;
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 100%;
+  margin: 0 0 10px 0;
+  border: none;
+  border-radius: 20px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+
+.btn:hover,
+.btn:focus {
+  color: #fff;
+  background-color: #5ca6b1;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.forgot-pass {
+  font-size: 12px;
+  text-align: center;
+  display: block;
+}
+
+.forgot-pass a {
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.forgot-pass a:hover {
+  color: #777;
+  text-decoration: underline;
+}
+
+@media only screen and (max-width: 576px) {
+  .form-container {
+    padding: 20px;
+  }
+  .form-icon {
+    width: 100%;
+    padding: 20px 0;
+  }
+  .form-horizontal {
+    width: 100%;
+    padding: 30px 15px;
+  }
+  .title {
+    font-size: 20px;
+    margin: 0 0 20px 0;
+  }
+  .form-group {
+    width: 100%;
+  }
+  .form-control {
+    width: 100%;
+  }
+  .btn {
+    font-size: 14px;
+  }
+}
+
+/*FONDO*/
+body {
+  background-image: url("../imagenes/fondo2.png");
+  background-size: 85%;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+}
+
+@media (max-width: 1200px) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    background-size: auto;
+    background-position: top center;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    background-size: 100% auto;
+    background-position: center top;
+  }
+}

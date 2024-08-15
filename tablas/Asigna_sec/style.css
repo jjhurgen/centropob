@@ -1,0 +1,114 @@
+/* styles.css */
+body {
+  background-color: #f8f9fa;
+}
+
+.container {
+  margin-top: 20px;
+}
+
+thead.thead-light {
+  background-color: #d0e9ff;
+}
+
+.selected-row {
+  background-color: #22a8dd !important;
+  color: white;
+}
+
+.custom-select2 .select2-container--default .select2-selection--single {
+  background-color: #f2f2f2;
+  border: 1px solid #007bff; /* Blue border */
+  border-radius: 4px;
+  padding: 5px;
+  height: 42px; /* Adjust height as needed */
+  display: flex;
+  align-items: center;
+  font-family: Arial, sans-serif; /* Set font to Arial */
+}
+
+.custom-select2
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
+  color: #333;
+  line-height: 32px; /* Adjust line-height to match new height */
+  padding-left: 8px;
+  font-family: Arial, sans-serif; /* Set font to Arial */
+}
+
+.custom-select2
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
+  height: 32px;
+  right: 5px;
+}
+
+.custom-select2 .select2-dropdown {
+  border-radius: 4px;
+}
+
+/* Estilo para el campo de búsqueda */
+.custom-select2 .select2-search--dropdown .select2-search__field {
+  border: 1px solid #87ceeb; /* Light blue border */
+  padding: 10px; /* Increase padding for height */
+  border-radius: 4px;
+  font-family: Arial, sans-serif; /* Set font to Arial */
+}
+
+/* Estilo para el input de búsqueda */
+.custom-select2
+  .select2-search--dropdown
+  .select2-search__field::-webkit-input-placeholder {
+  color: #007bff; /* Blue color */
+}
+
+.custom-select2
+  .select2-search--dropdown
+  .select2-search__field:-moz-placeholder {
+  color: #007bff; /* Blue color */
+}
+
+.custom-select2
+  .select2-search--dropdown
+  .select2-search__field::-moz-placeholder {
+  color: #007bff; /* Blue color */
+}
+
+.custom-select2
+  .select2-search--dropdown
+  .select2-search__field:-ms-input-placeholder {
+  color: #007bff; /* Blue color */
+}
+
+.container {
+  margin-top: 20px;
+}
+
+thead.thead-light {
+  background-color: #d0e9ff;
+}
+
+.table {
+  width: 100%; /* Tabla ocupa todo el ancho del contenedor */
+  border-collapse: collapse; /* Colapso de bordes */
+}
+
+.table th,
+td {
+  border: 1px solid #b41010; /* Borde de celdas */
+  text-align: left; /* Alineación de texto izquierda */
+}
+.table th {
+  background-color: #f2f2f2; /* Fondo gris claro para encabezados */
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2; /* Fondo gris claro para filas pares */
+}
+h1 {
+  color: #198393;
+  font-family: EB Garamond;
+  text-transform: uppercase;
+}
